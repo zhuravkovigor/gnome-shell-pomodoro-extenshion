@@ -1,0 +1,9 @@
+{
+  "uuid": "pomodoro@igor.dev",
+  "name": "Pomodoro Timer",
+  "description": "Simple Pomodoro timer with customizable durations",
+  "version": 1,
+  "shell-version": ["45", "46", "47", "48", "49"],
+  "session-modes": ["user"],
+  "settings-schema": "org.gnome.shell.extensions.pomodoro"
+}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="gnome-shell-extension-pomodoro">
+  <schema path="/org/gnome/shell/extensions/pomodoro/" id="org.gnome.shell.extensions.pomodoro">
+    <key type="i" name="work-time">
+      <default>1500</default>
+      <summary>Work time duration</summary>
+      <description>Duration of work time in seconds (default: 25 minutes)</description>
+    </key>
+    <key type="i" name="short-break-time">
+      <default>300</default>
+      <summary>Short break duration</summary>
+      <description>Duration of short break in seconds (default: 5 minutes)</description>
+    </key>
+    <key type="i" name="long-break-time">
+      <default>900</default>
+      <summary>Long break duration</summary>
+      <description>Duration of long break in seconds (default: 15 minutes)</description>
+    </key>
+    <key type="i" name="long-break-interval">
+      <default>4</default>
+      <summary>Long break interval</summary>
+      <description>After how many pomodoros a long break occurs</description>
+    </key>
+    <key type="b" name="show-notifications">
+      <default>true</default>
+      <summary>Show notifications</summary>
+      <description>Show notifications when timer completes</description>
+    </key>
+    <key type="b" name="auto-start-next">
+      <default>true</default>
+      <summary>Auto-start next phase</summary>
+      <description>Automatically start the next pomodoro or break phase</description>
+    </key>
+  </schema>
+</schemalist>
