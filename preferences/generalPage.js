@@ -140,6 +140,17 @@ export const GeneralPage = GObject.registerClass(
         );
       });
       behaviorGroup.add(autoStartRow);
+
+      // Sound effects
+      const soundRow = new Adw.SwitchRow({
+        title: _("Sound Effects"),
+        subtitle: _("Play sounds when transitioning between phases"),
+        active: this._settings.get_boolean("sound-enabled"),
+      });
+      soundRow.connect("notify::active", () => {
+        this._settings.set_boolean("sound-enabled", soundRow.get_active());
+      });
+      behaviorGroup.add(soundRow);
     }
   }
 );

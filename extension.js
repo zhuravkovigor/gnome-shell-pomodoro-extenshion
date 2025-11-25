@@ -1,6 +1,7 @@
 /* exported PomodoroExtension */
 
 import Clutter from "gi://Clutter";
+import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import GObject from "gi://GObject";
 import St from "gi://St";
@@ -12,10 +13,11 @@ import * as PopupMenu from "resource:///org/gnome/shell/ui/popupMenu.js";
 
 const PomodoroIndicator = GObject.registerClass(
   class PomodoroIndicator extends PanelMenu.Button {
-    _init(settings) {
+    _init(settings, extensionPath) {
       super._init(0.5, "Pomodoro Timer");
 
       this._settings = settings;
+      this._extensionPath = extensionPath;
 
       this._workTime = this._settings.get_int("work-time");
       this._shortBreak = this._settings.get_int("short-break-time");
@@ -34,6 +36,62 @@ const PomodoroIndicator = GObject.registerClass(
       this._onSettingsChanged = this._settings.connect("changed", () =>
         this._updateSettings()
       );
+    }
+
+    _playSound(soundFile) {
+      // Check if sound is enabled
+      if (!this._settings.get_boolean("sound-enabled")) {
+        return;
+      }
+
+      try {
+        const soundPath = GLib.build_filenamev([
+          this._extensionPath,
+          "sounds",
+          soundFile,
+        ]);
+        const file = Gio.File.new_for_path(soundPath);
+
+        if (!file.query_exists(null)) {
+          console.error(`[Pomodoro] Sound file not found: ${soundPath}`);
+          return;
+        }
+
+        console.log(`[Pomodoro] Playing sound: ${soundPath}`);
+
+        // Try aplay first (ALSA), then paplay (PulseAudio)
+        let command = "aplay";
+        try {
+          GLib.spawn_command_line_sync("which aplay");
+        } catch (e) {
+          try {
+            GLib.spawn_command_line_sync("which paplay");
+            command = "paplay";
+          } catch (e2) {
+            console.error("[Pomodoro] Neither aplay nor paplay found");
+            return;
+          }
+        }
+
+        const [success, pid] = GLib.spawn_async(
+          null,
+          [command, soundPath],
+          null,
+          GLib.SpawnFlags.SEARCH_PATH | GLib.SpawnFlags.DO_NOT_REAP_CHILD,
+          null
+        );
+
+        if (success) {
+          console.log(`[Pomodoro] Sound spawned successfully with ${command}`);
+          GLib.child_watch_add(GLib.PRIORITY_DEFAULT, pid, () => {
+            GLib.spawn_close_pid(pid);
+          });
+        } else {
+          console.error("[Pomodoro] Failed to spawn sound process");
+        }
+      } catch (e) {
+        console.error(`[Pomodoro] Error playing sound: ${e.message}`);
+      }
     }
 
     _updateSettings() {
@@ -271,11 +329,13 @@ const PomodoroIndicator = GObject.registerClass(
           this._statusLabel.text = "☕ Long Break";
           this._label.text = `☕ ${this._formatTime(this._timeLeft)}`;
           this._isLongBreak = true;
+          this._playSound("long-break.wav");
         } else {
           this._timeLeft = this._shortBreak;
           this._statusLabel.text = "🌟 Short Break";
           this._label.text = `🌟 ${this._formatTime(this._timeLeft)}`;
           this._isLongBreak = false;
+          this._playSound("break.wav");
         }
         this._isWorkTime = false;
       } else {
@@ -289,6 +349,7 @@ const PomodoroIndicator = GObject.registerClass(
         this._statusLabel.text = "🍅 Work Time";
         this._label.text = `🍅 ${this._formatTime(this._timeLeft)}`;
         this._isWorkTime = true;
+        this._playSound("focus.wav");
       }
 
       this._startStopItem.label.text = "Start";
@@ -349,7 +410,7 @@ const PomodoroIndicator = GObject.registerClass(
 export default class PomodoroExtension extends Extension {
   enable() {
     const settings = this.getSettings();
-    this._indicator = new PomodoroIndicator(settings);
+    this._indicator = new PomodoroIndicator(settings, this.path);
     this._indicator.buildUI();
     Main.panel.addToStatusArea(this.uuid, this._indicator);
   }

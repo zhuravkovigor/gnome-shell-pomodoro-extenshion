@@ -31,5 +31,10 @@
       <summary>Auto-start next phase</summary>
       <description>Automatically start the next pomodoro or break phase</description>
     </key>
+    <key type="b" name="sound-enabled">
+      <default>true</default>
+      <summary>Enable sound effects</summary>
+      <description>Play sound effects when transitioning between phases</description>
+    </key>
   </schema>
 </schemalist>
