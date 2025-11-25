@@ -303,12 +303,17 @@ const PomodoroIndicator = GObject.registerClass(
     _resetTimer() {
       this._stopTimer();
       this._isWorkTime = true;
+      this._pomodoroCount = 0;
+      this._isLongBreak = false;
       this._timeLeft = this._workTime;
       this._label.text = `🍅 ${this._formatTime(this._timeLeft)}`;
       this._statusLabel.text = "🍅 Work Time";
+
+      // Update progress bar and count display
       if (this._progressBar) {
         this._progressBar.queue_repaint();
       }
+      this._progressCountLabel.text = `0/${this._longBreakInterval}`;
     }
 
     _nextStep() {
