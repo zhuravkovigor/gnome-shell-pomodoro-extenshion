@@ -4,7 +4,8 @@ Simple Pomodoro timer for GNOME Shell 45+ with customizable work sessions and br
 
 ## Screenshots
 
-![Long Break](./long-break.png)
+![Long Break](screenshots/long-break.png)
+![Settings](screenshots/settings.png)
 
 ## Features
 

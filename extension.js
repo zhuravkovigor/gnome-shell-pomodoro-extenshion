@@ -18,6 +18,10 @@ const PomodoroIndicator = GObject.registerClass(
 
       this._settings = settings;
       this._extensionPath = extensionPath;
+      this._stateFile = GLib.build_filenamev([
+        GLib.get_user_cache_dir(),
+        "pomodoro-state.json",
+      ]);
 
       this._workTime = this._settings.get_int("work-time");
       this._shortBreak = this._settings.get_int("short-break-time");
@@ -32,10 +36,78 @@ const PomodoroIndicator = GObject.registerClass(
       this._timeout = null;
       this._signalIds = [];
 
+      // Restore state if exists
+      this._restoreState();
+
+      // Save state periodically
+      this._saveStateTimeout = GLib.timeout_add_seconds(
+        GLib.PRIORITY_DEFAULT,
+        5,
+        () => {
+          this._saveState();
+          return GLib.SOURCE_CONTINUE;
+        }
+      );
+
       // watch settings changes
       this._onSettingsChanged = this._settings.connect("changed", () =>
         this._updateSettings()
       );
+    }
+
+    _saveState() {
+      try {
+        const state = {
+          timeLeft: this._timeLeft,
+          isWorkTime: this._isWorkTime,
+          isLongBreak: this._isLongBreak,
+          pomodoroCount: this._pomodoroCount,
+          timestamp: Date.now(),
+        };
+        const file = Gio.File.new_for_path(this._stateFile);
+        const [success] = file.replace_contents(
+          JSON.stringify(state),
+          null,
+          false,
+          Gio.FileCreateFlags.REPLACE_DESTINATION,
+          null
+        );
+        if (success) {
+          console.log("[Pomodoro] State saved");
+        }
+      } catch (e) {
+        console.error(`[Pomodoro] Error saving state: ${e.message}`);
+      }
+    }
+
+    _restoreState() {
+      try {
+        const file = Gio.File.new_for_path(this._stateFile);
+        if (!file.query_exists(null)) {
+          console.log("[Pomodoro] No saved state found");
+          return;
+        }
+
+        const [success, contents] = file.load_contents(null);
+        if (!success) return;
+
+        const state = JSON.parse(new TextDecoder().decode(contents));
+        const elapsed = Math.floor((Date.now() - state.timestamp) / 1000);
+
+        // Only restore if less than 2 hours passed
+        if (elapsed < 7200) {
+          this._timeLeft = Math.max(0, state.timeLeft - elapsed);
+          this._isWorkTime = state.isWorkTime;
+          this._isLongBreak = state.isLongBreak;
+          this._pomodoroCount = state.pomodoroCount;
+          console.log(`[Pomodoro] State restored, adjusted by ${elapsed}s`);
+        } else {
+          console.log("[Pomodoro] State too old, discarding");
+          file.delete(null);
+        }
+      } catch (e) {
+        console.error(`[Pomodoro] Error restoring state: ${e.message}`);
+      }
     }
 
     _playSound(soundFile) {
@@ -110,8 +182,12 @@ const PomodoroIndicator = GObject.registerClass(
 
     buildUI() {
       // centered label with emoji
+      let emoji = "🍅";
+      if (!this._isWorkTime) {
+        emoji = this._isLongBreak ? "☕" : "🌟";
+      }
       this._label = new St.Label({
-        text: `🍅 ${this._formatTime(this._timeLeft)}`,
+        text: `${emoji} ${this._formatTime(this._timeLeft)}`,
         y_align: Clutter.ActorAlign.CENTER,
       });
 
@@ -252,6 +328,32 @@ const PomodoroIndicator = GObject.registerClass(
         id: this._nextStepItem.connect("activate", () => this._nextStep()),
       });
       this.menu.addMenuItem(this._nextStepItem);
+
+      // Update UI after restoration
+      this._updateUIAfterRestore();
+    }
+
+    _updateUIAfterRestore() {
+      // Update status label
+      if (this._isWorkTime) {
+        this._statusLabel.text = "🍅 Work Time";
+      } else if (this._isLongBreak) {
+        this._statusLabel.text = "☕ Long Break";
+      } else {
+        this._statusLabel.text = "🌟 Short Break";
+      }
+
+      // Update progress count
+      let currentCount = this._pomodoroCount % this._longBreakInterval;
+      if (currentCount === 0 && this._pomodoroCount > 0) {
+        currentCount = this._longBreakInterval;
+      }
+      this._progressCountLabel.text = `${currentCount}/${this._longBreakInterval}`;
+
+      // Repaint progress bar
+      if (this._progressBar) {
+        this._progressBar.queue_repaint();
+      }
     }
 
     _formatTime(seconds) {
@@ -387,6 +489,9 @@ const PomodoroIndicator = GObject.registerClass(
     }
 
     destroy() {
+      // Save state before destroying
+      this._saveState();
+
       // Disconnect all signals
       this._signalIds.forEach((signal) => {
         if (signal.obj && signal.id) {
@@ -399,6 +504,12 @@ const PomodoroIndicator = GObject.registerClass(
       if (this._onSettingsChanged) {
         this._settings.disconnect(this._onSettingsChanged);
         this._onSettingsChanged = null;
+      }
+
+      // Remove save state timeout
+      if (this._saveStateTimeout) {
+        GLib.source_remove(this._saveStateTimeout);
+        this._saveStateTimeout = null;
       }
 
       // Remove timeout source
