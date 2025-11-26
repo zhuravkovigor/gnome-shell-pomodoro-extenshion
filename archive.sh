@@ -16,6 +16,7 @@ zip -r "$ARCHIVE_PATH" . \
     --exclude='long-break.png' \
     --exclude='.git/*' \
     --exclude='schemas/gschemas.compiled' \
+    --exclude='.gitignore' \
     --exclude='*.zip' \
     --exclude='archive.sh' > /dev/null 2>&1
 
