@@ -1,10 +1,9 @@
 {
   "uuid": "pomodoro@zhuravkovigor.dev",
-  "name": "Pomodoro Timer",
-  "description": "Simple Pomodoro timer with customizable durations",
-  "version": 1.2,
+  "name": "Focus Buddy",
+  "description": "Simple Pomodoro timer with customizable durations and sound notifications to help you stay focused and productive.",
+  "version": 1,
   "shell-version": ["49"],
-  "session-modes": ["user"],
   "url": "",
   "settings-schema": "org.gnome.shell.extensions.pomodoro"
 }

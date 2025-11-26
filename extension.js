@@ -376,6 +376,11 @@ const PomodoroIndicator = GObject.registerClass(
       this._isRunning = true;
       this._startStopItem.label.text = "Pause";
 
+      if (this._timeout) {
+        GLib.source_remove(this._timeout);
+        this._timeout = null;
+      }
+
       this._timeout = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
         if (this._timeLeft > 0) {
           this._timeLeft--;
