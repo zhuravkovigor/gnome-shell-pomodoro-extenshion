@@ -129,38 +129,8 @@ const PomodoroIndicator = GObject.registerClass(
           return;
         }
 
-        console.log(`[Pomodoro] Playing sound: ${soundPath}`);
-
-        // Try aplay first (ALSA), then paplay (PulseAudio)
-        let command = "aplay";
-        try {
-          GLib.spawn_command_line_sync("which aplay");
-        } catch (e) {
-          try {
-            GLib.spawn_command_line_sync("which paplay");
-            command = "paplay";
-          } catch (e2) {
-            console.error("[Pomodoro] Neither aplay nor paplay found");
-            return;
-          }
-        }
-
-        const [success, pid] = GLib.spawn_async(
-          null,
-          [command, soundPath],
-          null,
-          GLib.SpawnFlags.SEARCH_PATH | GLib.SpawnFlags.DO_NOT_REAP_CHILD,
-          null
-        );
-
-        if (success) {
-          console.log(`[Pomodoro] Sound spawned successfully with ${command}`);
-          GLib.child_watch_add(GLib.PRIORITY_DEFAULT, pid, () => {
-            GLib.spawn_close_pid(pid);
-          });
-        } else {
-          console.error("[Pomodoro] Failed to spawn sound process");
-        }
+        const player = global.display.get_sound_player();
+        player.play_from_file(file, "Pomodoro Timer", null);
       } catch (e) {
         console.error(`[Pomodoro] Error playing sound: ${e.message}`);
       }

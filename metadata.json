@@ -4,6 +4,6 @@
   "description": "Simple Pomodoro timer with customizable durations and sound notifications to help you stay focused and productive.",
   "version": 1,
   "shell-version": ["49"],
-  "url": "",
+  "url": "https://github.com/zhuravkovigor/gnome-shell-pomodoro-extenshion",
   "settings-schema": "org.gnome.shell.extensions.pomodoro"
 }
